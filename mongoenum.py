@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import sys
+import re
 from argparse import ArgumentParser
 from pprint import pprint
 
@@ -40,10 +40,18 @@ def enum_databases(client):
 def format_size(size):
     suffix = "b"
     suffixes = ["KB", "MB", "GB", "TB"]
+    round_prec = {
+        "b": 0,
+        "KB": 0,
+        "MB": 0,
+        "GB": 0,
+        "TB": 1,
+    }
     while suffixes and size > 1000:
         size = size / 1000
         suffix = suffixes.pop(0)
-    size_str = str(round(size, 1))
+    size_str = str(round(size, round_prec[suffix]))
+    size_str = re.sub("\.0+$", "", size_str)
     return "{} {}".format(size_str, suffix)
 
 
@@ -59,10 +67,17 @@ def format_count(size):
 
 def render_enum_data(data):
     for db_item in sorted(data, key=lambda x: x["sizeOnDisk"], reverse=True):
+        storage_size = 0
+        index_size = 0
+        for col in db_item["collections"]:
+            storage_size += col["storageSize"]
+            index_size += col["totalIndexSize"]
         print(
-            "Database: {} -- {}".format(
+            "Database: {} -- {} = {} + {}".format(
                 db_item["name"],
                 format_size(db_item["sizeOnDisk"]),
+                format_size(storage_size),
+                format_size(index_size),
             )
         )
         print("Collections:")
@@ -70,13 +85,13 @@ def render_enum_data(data):
             db_item["collections"], key=lambda x: x["size"], reverse=True
         ):
             print(
-                "  * {} -- items: {} -- object: {} -- data: {} -- storage: {} -- index: {}".format(
+                "  * {} -- storage: {} -- index: {} -- data: {} -- items: {} -- object: {}".format(
                     col["name"],
-                    format_count(col["count"]),
-                    format_count(col["avgObjSize"]),
-                    format_size(col["size"]),
                     format_size(col["storageSize"]),
                     format_size(col["totalIndexSize"]),
+                    format_size(col["size"]),
+                    format_count(col["count"]),
+                    format_size(col["avgObjSize"]),
                 )
             )
             for name, size in sorted(
