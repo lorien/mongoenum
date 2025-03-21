@@ -1,0 +1,11 @@
+[package]
+name = "mongoenum"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bson = "2.14.0"
+
+[dependencies.mongodb]
+version = "3.2.3"
+features = ["sync"]
