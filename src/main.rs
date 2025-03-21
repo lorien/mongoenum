@@ -9,8 +9,10 @@ use mongodb::{
 
 struct InfoDatabase {
     name: String,
-    storage_size: i64,
+    total_storage_size: i64,
     collections: Vec<InfoCollection>,
+    data_storage_size: i64,
+    index_storage_size: i64,
 }
 
 struct InfoCollection {
@@ -94,12 +96,16 @@ fn collect_stat(client: &Client, failed_cols: &mut Vec<(String, String)>) -> Vec
                 }
             }
         }
+        cols.sort_by_key(|x| -1 * x.total_storage_size);
         stat.push(InfoDatabase {
             name: db_info.name,
-            storage_size: db_info.size_on_disk as i64,
+            total_storage_size: db_info.size_on_disk as i64,
+            data_storage_size: cols.iter().map(|x| x.data_storage_size).sum(),
+            index_storage_size: cols.iter().map(|x| x.index_storage_size).sum(),
             collections: cols,
         });
     }
+    stat.sort_by_key(|x| -1 * x.total_storage_size);
     stat
 }
 
@@ -133,18 +139,12 @@ fn main() {
     let mut failed_cols: Vec<(String, String)> = vec![];
     let stat = collect_stat(&client, &mut failed_cols);
     for db in stat {
-        let mut data_size: i64 = 0;
-        let mut index_size: i64 = 0;
-        for col in &db.collections {
-            data_size += col.data_storage_size;
-            index_size += col.index_storage_size;
-        }
         println!(
             "[{}: {} = {} + {}]",
             db.name,
-            format_bytes_amount(db.storage_size),
-            format_bytes_amount(data_size),
-            format_bytes_amount(index_size)
+            format_bytes_amount(db.total_storage_size),
+            format_bytes_amount(db.data_storage_size),
+            format_bytes_amount(db.index_storage_size)
         );
         for col in &db.collections {
             println!(
