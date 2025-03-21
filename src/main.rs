@@ -6,7 +6,6 @@ use mongodb::{
     options::{ClientOptions, ServerAddress},
     sync::Client,
 };
-use std::any::type_name_of_val;
 
 struct InfoDatabase {
     name: String,
@@ -47,10 +46,7 @@ fn get_int_field(doc: &Document, name: &str) -> Result<i64, String> {
     match doc.get(name) {
         Some(&Bson::Int32(data)) => Ok(data as i64),
         Some(&Bson::Double(data)) => Ok(data.floor() as i64),
-        Some(data) => Err(format!(
-            "Field name has unexpected type: {}",
-            type_name_of_val(&data)
-        )),
+        Some(data) => Err(format!("Field name has unexpected type: {:?}", data)),
         None => Err(format!("Field {} does not exist", name)),
     }
 }
@@ -59,10 +55,7 @@ fn get_int_field_or(doc: &Document, name: &str, default: i64) -> Result<i64, Str
     match doc.get(name) {
         Some(&Bson::Int32(data)) => Ok(data as i64),
         Some(&Bson::Double(data)) => Ok(data.floor() as i64),
-        Some(data) => Err(format!(
-            "Field name has unexpected type: {}",
-            type_name_of_val(&data)
-        )),
+        Some(data) => Err(format!("Field name has unexpected type: {}", data)),
         None => Ok(default),
     }
 }
