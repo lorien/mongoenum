@@ -7,6 +7,10 @@ use mongodb::{
     sync::Client,
 };
 
+const BYTES_AMOUNT_SUFFIXES: &[(&str, usize)] =
+    &[("b", 0), ("KB", 0), ("MB", 0), ("GB", 0), ("TB", 1)];
+const COUNT_AMOUNT_SUFFIXES: &[&str] = &["", "K", "M", "B"];
+
 struct InfoDatabase {
     name: String,
     total_storage_size: i64,
@@ -112,25 +116,23 @@ fn collect_stat(client: &Client, failed_cols: &mut Vec<(String, String)>) -> Vec
 fn format_bytes_amount(amount: i64) -> String {
     let mut suffix_idx = 0;
     let mut res_amount: f64 = amount as f64;
-    let suffixes = vec![("b", 0), ("KB", 0), ("MB", 0), ("GB", 0), ("TB", 1)];
-    while res_amount > 1000.0 && suffix_idx < suffixes.len() {
+    while res_amount > 1000.0 && suffix_idx < BYTES_AMOUNT_SUFFIXES.len() {
         res_amount = res_amount / 1000.0;
         suffix_idx += 1;
     }
-    let amount_str = format!("{1:.0$}", suffixes[suffix_idx].1, res_amount);
-    format!("{} {}", amount_str, suffixes[suffix_idx].0)
+    let amount_str = format!("{1:.0$}", BYTES_AMOUNT_SUFFIXES[suffix_idx].1, res_amount);
+    format!("{} {}", amount_str, BYTES_AMOUNT_SUFFIXES[suffix_idx].0)
 }
 
 fn format_count_amount(amount: i64) -> String {
     let mut suffix_idx = 0;
     let mut res_amount: f64 = amount as f64;
-    let suffixes = vec!["", "K", "M", "B"];
-    while res_amount > 1000.0 && suffix_idx < suffixes.len() {
+    while res_amount > 1000.0 && suffix_idx < COUNT_AMOUNT_SUFFIXES.len() {
         res_amount = res_amount / 1000.0;
         suffix_idx += 1;
     }
     let amount_str = res_amount.round().to_string();
-    format!("{}{}", amount_str, suffixes[suffix_idx])
+    format!("{}{}", amount_str, COUNT_AMOUNT_SUFFIXES[suffix_idx])
 }
 
 fn main() {
