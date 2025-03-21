@@ -93,14 +93,11 @@ fn collect_stat(client: &Client, failed_cols: &mut Vec<(String, String)>) -> Vec
             ) {
                 Ok(res) => cols.push(res),
                 Err(error) => {
-                    failed_cols.push((
-                        format!("{}.{}", db_info.name, col_name),
-                        format!("{}", error),
-                    ));
+                    failed_cols.push((format!("{}.{}", db_info.name, col_name), error.to_string()));
                 }
             }
         }
-        cols.sort_by_key(|x| -1 * x.total_storage_size);
+        cols.sort_by_key(|x| -x.total_storage_size);
         stat.push(InfoDatabase {
             name: db_info.name,
             total_storage_size: db_info.size_on_disk as i64,
@@ -109,7 +106,7 @@ fn collect_stat(client: &Client, failed_cols: &mut Vec<(String, String)>) -> Vec
             collections: cols,
         });
     }
-    stat.sort_by_key(|x| -1 * x.total_storage_size);
+    stat.sort_by_key(|x| -x.total_storage_size);
     stat
 }
 
@@ -117,7 +114,7 @@ fn format_bytes_amount(amount: i64) -> String {
     let mut suffix_idx = 0;
     let mut res_amount: f64 = amount as f64;
     while res_amount > 1000.0 && suffix_idx < BYTES_AMOUNT_SUFFIXES.len() {
-        res_amount = res_amount / 1000.0;
+        res_amount /= res_amount;
         suffix_idx += 1;
     }
     let amount_str = format!("{1:.0$}", BYTES_AMOUNT_SUFFIXES[suffix_idx].1, res_amount);
@@ -128,7 +125,7 @@ fn format_count_amount(amount: i64) -> String {
     let mut suffix_idx = 0;
     let mut res_amount: f64 = amount as f64;
     while res_amount > 1000.0 && suffix_idx < COUNT_AMOUNT_SUFFIXES.len() {
-        res_amount = res_amount / 1000.0;
+        res_amount /= 1000.0;
         suffix_idx += 1;
     }
     let amount_str = res_amount.round().to_string();
@@ -161,7 +158,7 @@ fn main() {
             );
         }
     }
-    if failed_cols.len() > 0 {
+    if !failed_cols.is_empty() {
         println!("Failed to process collections:");
         for (col, msg) in &failed_cols {
             println!(" - {}: {}", col, msg);
